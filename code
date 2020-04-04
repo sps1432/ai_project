@@ -1,0 +1,113 @@
+# for regulaar expression
+import string 
+#for string manipulations............
+import re
+print("an email is spam or ham\n")
+print("###########################################################################")
+
+class spamfy:
+    def __init__(self, ct):
+        # example ham-2,spam-5
+        self.fcc = {}
+        #example ham-4,spam-7
+        self.cc = {}
+        #example threshold as ham-1,spam-3
+        self.ct = ct
+
+
+    
+    def main(self, t):
+        piece  = re.compile('\\W*')
+        bunch = [b.lower() for b in piece.split(t) if len(b) > 3 and len(b) < 22]
+
+        return dict([(word, 1) for word in bunch])
+
+    
+    def new_count(self, f, c):
+        self.fcc.setdefault(f, {})
+        self.fcc[f].setdefault(c, 0)
+        
+        self.fcc[f][c] += 1
+
+    
+    def categoryaddition(self, c):
+        self.cc.setdefault(c, 0)
+        
+        self.cc[c] +=1
+
+    
+    def trained(self, t,c):
+        furthers= self.main(t)
+        for f in furthers:
+            self.new_count(f,c)
+
+        self.categoryaddition(c)
+
+
+    def Probability(self,f,c):
+        if f not in self.fcc or \
+            c not in self.fcc[f] or \
+            self.fcc[f][c] == 0:
+            return 0;
+        else:
+            
+            return float(self.fcc[f][c]) / float(self.cc[c])
+
+    # _weighted_probability
+    def another_Probability(self, f, c, w=1.0, assumption=0.5):
+        p = self.Probability(f, c)
+
+
+        final = sum([self.fcc[f][dog] \
+                     if f in self.fcc \
+                     and dog in self.fcc[f] 
+                     else 0 \
+            for dog in self.cc])
+
+        return float(w * assumption + final * p)/float(w+final)
+
+   
+    def documnetation(self, t, c):
+        furthers = self.main(t)
+
+        doc = 1
+        
+        for f in furthers:
+            doc *= self.another_Probability(f,c)
+
+        return doc
+
+    
+    def cp(self, t,c):
+        d1 = self.documnetation(t,c)
+        d2 = float(self.cc[c] if c in self.cc else 0)/float(sum([self.cc[dog] for dog in self.cc.keys()]))
+        
+        return d1*d2
+
+    
+    def filtering(self, t, default='unknown'):
+        proba = {}
+        max = 0
+        for dog in self.cc.keys():
+            proba[dog] = self.cp(t,dog)
+            if(proba[dog] > max):
+                max = proba[dog]
+                maindog= dog
+
+        for dog in proba.keys():
+            if dog != maindog:
+                if proba[dog]*self.ct[maindog] > proba[maindog]:
+                    return default
+        return maindog
+
+
+t= {'spam':1,'ham':3}
+ob = spamfy(t)
+ob2 = spamfy(t)
+#run and test
+ob.trained('You won lottery', 'spam')
+print(ob.filtering('You won 20000$ money as lottery'))
+ob2.trained('Security alert', 'ham')
+print(ob2.filtering('alert'))
+
+
