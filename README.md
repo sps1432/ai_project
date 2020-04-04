@@ -1,2 +1,2 @@
 # ai_project
-Ai project
+Ai project on classification of mails. 
